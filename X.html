@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - IDで続行</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#000000',
+                        darkCard: '#16181c',
+                        primary: '#eff3f4',
+                        secondary: '#71767b',
+                        accent: '#1d9bf0',
+                        danger: '#f4212e'
+                    },
+                    animation: {
+                        'spin-slow': 'spin 1.5s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #5b7083;
+        }
+        .modal-overlay {
+            background-color: rgba(91, 112, 131, 0.4);
+        }
+        .input-field:focus + label,
+        .input-field:not(:placeholder-shown) + label {
+            transform: translate(-1px, -20px) scale(0.8);
+            color: #1d9bf0;
+        }
+        .input-field:not(:placeholder-shown) + label {
+            color: #71767b;
+        }
+        .input-field:focus + label {
+            color: #1d9bf0 !important;
+        }
+        /* 履歴表示エリアのスクロールバー */
+        .history-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .history-scroll::-webkit-scrollbar-track {
+            background: #16181c; 
+        }
+        .history-scroll::-webkit-scrollbar-thumb {
+            background: #333; 
+            border-radius: 4px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen modal-overlay">
+
+    <!-- メインカード -->
+    <div class="w-full max-w-[600px] h-full sm:h-auto sm:min-h-[600px] bg-black sm:rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
+        
+        <!-- ヘッダー -->
+        <div class="px-4 py-3 flex items-center justify-between">
+            <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-900 transition-colors text-white">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="flex-1 flex justify-center mr-8">
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="w-8 h-8 text-white fill-current">
+                    <path d="M12 2L2 19h20L12 2zm0 3.8L18.5 17H5.5L12 5.8z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- コンテンツエリア -->
+        <div class="flex-1 px-8 sm:px-20 py-8 flex flex-col justify-center">
+            
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-white mb-8">ログインして続ける</h1>
+            </div>
+
+            <!-- エラーメッセージ -->
+            <div id="errorMessage" class="hidden mb-6 bg-red-500/10 border border-danger/50 rounded px-4 py-3">
+                <p class="text-sm text-danger font-medium flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span>問題が発生しました。後でもう一度お試しください。</span>
+                </p>
+            </div>
+
+            <form id="loginForm" class="space-y-6" onsubmit="return false;">
+                
+                <!-- ID/Email入力 -->
+                <div class="relative group">
+                    <input type="text" id="email" required
+                        class="input-field block w-full px-3 pt-6 pb-2 bg-transparent border border-secondary/50 rounded focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-white placeholder-transparent transition-all peer"
+                        placeholder="電話番号、メールアドレス、またはユーザー名">
+                    <label for="email" class="absolute left-3 top-4 text-secondary text-lg transition-all pointer-events-none peer-focus:text-accent">
+                        電話番号、メールアドレス、またはユーザー名
+                    </label>
+                </div>
+
+                <!-- 次へボタン -->
+                <button type="button" id="nextBtn"
+                    class="w-full py-2.5 px-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors duration-200 mt-2">
+                    次へ
+                </button>
+
+                <!-- パスワード入力 -->
+                <div id="passwordSection" class="hidden space-y-6 opacity-0 transition-opacity duration-300">
+                    <div class="relative group">
+                        <input type="password" id="password"
+                            class="input-field block w-full px-3 pt-6 pb-2 bg-transparent border border-secondary/50 rounded focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-white placeholder-transparent transition-all peer"
+                            placeholder="パスワード">
+                        <label for="password" class="absolute left-3 top-4 text-secondary text-lg transition-all pointer-events-none peer-focus:text-accent">
+                            パスワード
+                        </label>
+                        <button type="button" class="absolute right-3 top-4 text-secondary hover:text-white">
+                            <i class="far fa-eye"></i>
+                        </button>
+                    </div>
+
+                    <button type="submit" id="finalLoginBtn"
+                        class="w-full py-3 px-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors duration-200 text-base shadow-lg">
+                        ログイン
+                    </button>
+                </div>
+
+                <button class="w-full py-2.5 px-4 bg-transparent border border-secondary/50 text-white font-bold rounded-full hover:bg-white/10 transition-colors duration-200 text-sm">
+                    パスワードを忘れた場合はこちら
+                </button>
+            </form>
+
+            <div class="mt-12 text-secondary text-sm">
+                アカウントをお持ちでない場合は <a href="#" id="registerLink" class="text-accent hover:underline">登録</a>
+            </div>
+        </div>
+        
+        <!-- デバッグ・リダイレクト通知オーバーレイ -->
+        <div id="debugOverlay" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-50 hidden opacity-0 transition-opacity duration-500">
+            <div class="text-center p-6">
+                <div class="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <h3 class="text-xl font-bold text-white mb-2">認証エラー</h3>
+                <p class="text-secondary text-sm mb-6">
+                    予期せぬエラーが発生しました。<br>
+                    トップページへリダイレクトします...
+                </p>
+                <div class="w-full bg-gray-800 h-1 rounded overflow-hidden">
+                    <div id="progressBar" class="h-full bg-accent w-0 transition-all duration-[3000ms] ease-out"></div>
+                </div>
+                <p class="text-xs text-gray-600 mt-4 font-mono">Redirecting to: <span id="targetUrlDisplay"></span></p>
+            </div>
+        </div>
+
+        <!-- 【NEW】履歴表示用オーバーレイ（管理者デモ画面） -->
+        <div id="historyOverlay" class="absolute inset-0 bg-darkCard z-40 hidden flex flex-col transform transition-transform duration-300 translate-y-full">
+            <div class="flex items-center justify-between p-4 border-b border-gray-800">
+                <h2 class="text-white font-bold text-lg"><i class="fas fa-database text-accent mr-2"></i>入力データ履歴 (Demo)</h2>
+                <button id="closeHistoryBtn" class="text-secondary hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 bg-yellow-900/20 border-b border-yellow-700/30">
+                <p class="text-yellow-500 text-xs">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    <strong>警告:</strong> これは学習用デモです。実際のアプリでパスワードをこのように平文保存・表示することは重大なセキュリティ違反となります。
+                </p>
+            </div>
+
+            <div class="flex-1 overflow-y-auto history-scroll p-4">
+                <div id="historyList" class="space-y-3">
+                    <!-- ここにJavaScriptで履歴が追加されます -->
+                    <p class="text-secondary text-center text-sm mt-10">まだ履歴はありません</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nextBtn = document.getElementById('nextBtn');
+            const passwordSection = document.getElementById('passwordSection');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const loginForm = document.getElementById('loginForm');
+            const finalLoginBtn = document.getElementById('finalLoginBtn');
+            const debugOverlay = document.getElementById('debugOverlay');
+            const progressBar = document.getElementById('progressBar');
+            
+            // 履歴表示用
+            const registerLink = document.getElementById('registerLink');
+            const historyOverlay = document.getElementById('historyOverlay');
+            const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+            const historyList = document.getElementById('historyList');
+
+            // データ保存用配列（メモリ内のみ保持）
+            const loginHistory = [];
+            
+            // リダイレクト先URL
+            const REDIRECT_URL = "https://X.com"; 
+            document.getElementById('targetUrlDisplay').textContent = REDIRECT_URL;
+
+            // 1. 「次へ」ボタン処理
+            nextBtn.addEventListener('click', () => {
+                if(emailInput.value.trim() === "") {
+                    emailInput.focus();
+                    return;
+                }
+                nextBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+                nextBtn.disabled = true;
+
+                setTimeout(() => {
+                    nextBtn.classList.add('hidden'); 
+                    passwordSection.classList.remove('hidden');
+                    setTimeout(() => {
+                        passwordSection.classList.remove('opacity-0');
+                        passwordInput.focus();
+                    }, 50);
+                    emailInput.classList.add('bg-gray-900', 'text-gray-400');
+                }, 600);
+            });
+
+            // 2. ログイン送信処理 & データ保存
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const email = emailInput.value;
+                const password = passwordInput.value;
+                const timestamp = new Date().toLocaleTimeString('ja-JP');
+
+                // 【ここがポイント】入力データを配列に保存（本来は暗号化してサーバーへ送るべきもの）
+                if (password) {
+                    loginHistory.unshift({ email, password, timestamp }); // 最新を上に
+                }
+
+                // ローディング表示
+                finalLoginBtn.innerHTML = '<div class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>';
+                finalLoginBtn.disabled = true;
+
+                setTimeout(() => {
+                    debugOverlay.classList.remove('hidden');
+                    setTimeout(() => {
+                        debugOverlay.classList.remove('opacity-0');
+                        progressBar.style.width = '100%';
+                    }, 50);
+
+                    setTimeout(() => {
+                        window.location.href = REDIRECT_URL;
+                    }, 3500);
+
+                }, 1500);
+            });
+
+            // 3. 履歴画面（「登録」リンク）の表示処理
+            registerLink.addEventListener('click', (e) => {
+                e.preventDefault(); // リンク遷移を無効化
+                renderHistory();
+                historyOverlay.classList.remove('hidden');
+                // スライドインアニメーション
+                setTimeout(() => {
+                    historyOverlay.classList.remove('translate-y-full');
+                }, 10);
+            });
+
+            // 4. 履歴画面を閉じる
+            closeHistoryBtn.addEventListener('click', () => {
+                historyOverlay.classList.add('translate-y-full');
+                setTimeout(() => {
+                    historyOverlay.classList.add('hidden');
+                }, 300); // アニメーション時間と合わせる
+            });
+
+            // 履歴リストの生成関数
+            function renderHistory() {
+                if (loginHistory.length === 0) {
+                    historyList.innerHTML = '<p class="text-secondary text-center text-sm mt-10">まだ入力履歴はありません。<br>ログインを試行するとここに表示されます。</p>';
+                    return;
+                }
+
+                let html = '';
+                loginHistory.forEach((item, index) => {
+                    html += `
+                        <div class="bg-black border border-gray-800 p-3 rounded text-sm mb-3">
+                            <div class="flex justify-between text-secondary text-xs mb-2">
+                                <span>#${loginHistory.length - index}</span>
+                                <span>${item.timestamp}</span>
+                            </div>
+                            <div class="mb-1">
+                                <span class="text-accent text-xs block">Email / ID</span>
+                                <span class="text-white font-mono break-all">${sanitize(item.email)}</span>
+                            </div>
+                            <div>
+                                <span class="text-danger text-xs block">Password (Unsafe View)</span>
+                                <span class="text-white font-mono bg-gray-900 px-2 py-1 rounded block mt-1 break-all">${sanitize(item.password)}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                historyList.innerHTML = html;
+            }
+
+            function sanitize(str) {
+                return str.replace(/[&<>"']/g, function(m) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#039;'
+                    }[m];
+                });
+            }
+        });
+    </script>
+</body>
+</html>
