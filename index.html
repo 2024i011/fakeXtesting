@@ -2,7 +2,7 @@
 <html lang="ja" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ログイン - IDで続行</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -32,18 +32,21 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             transition: background-color 0.3s ease;
+            /* モバイル最適化: デフォルトはカードと同じ背景色にする */
+            background-color: #ffffff;
         }
-        /* ライトモード背景 */
-        body:not(.dark) {
-            background-color: #f3f4f6;
-        }
-        /* ダークモード背景 */
         body.dark {
-            background-color: #5b7083;
+            background-color: #000000;
         }
-        
-        .modal-overlay {
-            background-color: rgba(91, 112, 131, 0.4);
+
+        /* PC以上 (sm breakpoint: 640px) での背景設定 */
+        @media (min-width: 640px) {
+            body {
+                background-color: rgba(91, 112, 131, 0.4); /* オーバーレイ色 */
+            }
+            body.dark {
+                background-color: #5b7083;
+            }
         }
         
         /* 入力フィールドのフローティングラベルアニメーション */
@@ -82,13 +85,19 @@
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen modal-overlay">
+<body class="flex items-center justify-center min-h-[100dvh]">
 
-    <!-- メインカード -->
-    <div class="w-full max-w-[600px] h-full sm:h-auto sm:min-h-[600px] bg-white dark:bg-black sm:rounded-2xl shadow-2xl flex flex-col relative overflow-hidden transition-colors duration-300" id="mainCard">
+    <!-- メインカード 
+         変更点: 
+         - min-h-[100dvh]: モバイルで画面いっぱいに高さを確保
+         - sm:min-h-[600px]: PCでは固定高さ
+         - sm:h-auto: PCではコンテンツに応じて伸縮
+         - sm:rounded-2xl: PCのみ角丸
+    -->
+    <div class="w-full max-w-[600px] min-h-[100dvh] sm:min-h-[600px] sm:h-auto bg-white dark:bg-black sm:rounded-2xl shadow-none sm:shadow-2xl flex flex-col relative overflow-hidden transition-colors duration-300" id="mainCard">
         
         <!-- ヘッダー -->
-        <div class="px-4 py-3 flex items-center justify-between">
+        <div class="px-4 py-3 flex items-center justify-between z-10">
             <button id="closeBtn" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-900 transition-colors text-gray-900 dark:text-white">
                 <i class="fas fa-times"></i>
             </button>
@@ -206,9 +215,9 @@
             <!-- コンテンツのラッパーをrelativeにして閉じるボタンの配置基準にする -->
             <div class="text-center p-6 max-w-sm relative">
                 
-                <!-- 【NEW】キャンセル（閉じる）ボタン -->
-                <button id="debugCloseBtn" class="hidden absolute -top-2 -right-2 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors shadow-sm" title="キャンセルして戻る">
-                    <i class="fas fa-times"></i>
+                <!-- キャンセル（閉じる）ボタン -->
+                <button id="debugCloseBtn" class="hidden absolute -top-6 -right-2 w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-800 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors shadow-sm z-50" title="キャンセルして戻る">
+                    <i class="fas fa-times text-lg"></i>
                 </button>
 
                 <!-- 処理中スピナー -->
@@ -299,7 +308,7 @@
             const loginHistory = [];
             
             // リダイレクト先URL
-            const REDIRECT_URL = "https://X.com"; 
+            const REDIRECT_URL = "https://example.com"; 
 
             // --- テーマ切り替え機能 ---
             themeToggleBtn.addEventListener('click', () => {
@@ -402,7 +411,6 @@
             // ★ フェイク処理関数（キャンセル機能付き） ★
             function startFakeProcess(btnElement, title, message) {
                 // 元のボタンの内容を保存（キャンセル時に復元するため）
-                const originalContent = '<i class="fas fa-arrow-right"></i> ログイン'; // デフォルト値
                 const isRecovery = btnElement === recoverySubmitBtn;
                 const savedText = isRecovery ? '検索' : 'ログイン'; // 簡易的な復元用テキスト
 
@@ -416,7 +424,7 @@
                 debugSpinner.classList.remove('hidden');
                 debugIcon.classList.add('hidden');
                 fakeReloadBtn.classList.add('hidden');
-                debugCloseBtn.classList.add('hidden'); // 最初は閉じるボタンを隠す（処理中っぽく）
+                debugCloseBtn.classList.add('hidden'); // 最初は閉じるボタンを隠す
                 
                 debugTitle.textContent = "処理中...";
                 debugMessage.textContent = "情報を確認しています...";
@@ -437,7 +445,6 @@
                 }, 1500);
 
                 // ★ 閉じるボタン（キャンセル）の動作定義 ★
-                // 毎回定義し直すことで、現在の btnElement (ログインボタン or 検索ボタン) を参照できる
                 debugCloseBtn.onclick = () => {
                     // フェードアウト
                     debugOverlay.classList.add('opacity-0');
@@ -447,18 +454,13 @@
                         
                         // ボタンを元の状態に戻す
                         btnElement.disabled = false;
-                        btnElement.textContent = savedText; // テキスト復元
-                        // もしスタイリングが必要ならクラスも調整可能
-                        
-                        // 検索ボタンの場合はクラス調整等は不要
-                        // ログインボタンの場合もテキストだけでOK
+                        btnElement.textContent = savedText; 
                     }, 300);
                 };
             }
 
             // ★ リロードボタンのクリックイベント ★
             fakeReloadBtn.addEventListener('click', () => {
-                const originalContent = fakeReloadBtn.innerHTML;
                 fakeReloadBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i>読み込み中...';
                 fakeReloadBtn.disabled = true;
 
